@@ -13,13 +13,11 @@ var parseJSON = function(json) {
     nextCharacter();
     var obj = {};
     var parsePairs = function() {
-      if (curChar === ' ') {
-        nextCharacter();
-      }
+      var key = parseValue();
       var colonPosition = json.indexOf(':');
-      var key = json.slice(1, colonPosition - 1);
       json = json.slice(colonPosition + 1);
       curChar = json[0];
+      deleteSpace();
       var value = parseValue();
       obj[key] = value;
       while (curChar === ',') {
@@ -35,6 +33,7 @@ var parseJSON = function(json) {
     if (curChar === '}') {
       nextCharacter();
     }
+    deleteSpace();
     return obj;
   };
 
@@ -53,22 +52,25 @@ var parseJSON = function(json) {
     if (curChar === ']') {
       nextCharacter();
     }
+    deleteSpace();
     return arr;
   };
 
   var parseValue = function() {
-    if (curChar === ' ') {
-      nextCharacter();
-    }
+    deleteSpace();
     //string
     if (curChar === '"') {
       nextCharacter();
       var string = '';
-      while (curChar !== '"' && string[string.length - 1] !== '\\') {
+      while (curChar !== '"' || (curChar === '"'
+        && string[string.length - 1] === '\\')) {
         string += curChar;
         nextCharacter();
       }
       nextCharacter();
+      deleteSpace();
+      string = string.replace(/\\"/g, '"');
+      string = string.replace(/\\\\/g, '\\');
       return string;
     }
     //true
@@ -114,23 +116,13 @@ var parseJSON = function(json) {
     curChar = json[0];
   };
 
-  if (curChar === '{') {
-    return parseObject();
-  }
-  if (curChar === '[') {
-    return parseArray();
-  }
-  //determine what type of data we have by looking for { or [
-  //array or object
-  //run an arrayparse or objectparse function
+  var deleteSpace = function() {
+    json = json.trim();
+    curChar = json[0];
+  };
 
-  //arrayparse function
-  //looking for a ]
-  //parseValue when the bracket is not closed
-
-  //objectparse function
-  //parseValue when the bracket is not closed
-
+  if (curChar === '{') {return parseObject();}
+  if (curChar === '[') {return parseArray();}
 };
 
 var testJSONParse = function(string) {
@@ -330,7 +322,8 @@ unparseableStrings = [
   '["foo", "bar\\"]'
 ];
 
-testArray(escapingStrings);
+testArray(parseableStrings);
+//testJSONParse(everythingStrings[2]);
 
 // object
 //     {}
